@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "usbprn.h"
 #include "cmdfunc.h"
@@ -147,7 +148,7 @@ int CMDS_Exec_Single (char * cmdline)
 
 #endif
 
-int TL_Dut_cmd_Process(HANDLE hDev, TL_DutcmdTypdef cmd, TL_ModeTypdef Mode, TL_ChipTypdef Type, unsigned long int p1,unsigned long int p2)
+int TL_Dut_cmd_Process(libusb_device_handle *hDev, TL_DutcmdTypdef cmd, TL_ModeTypdef Mode, TL_ChipTypdef Type, unsigned long int p1,unsigned long int p2)
 {
 //	printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
     unsigned char dut_cmd_buff[10]={0};
@@ -168,54 +169,55 @@ int TL_Dut_cmd_Process(HANDLE hDev, TL_DutcmdTypdef cmd, TL_ModeTypdef Mode, TL_
     dut_cmd_buff[8]= (p2>>24)&0xff;
 
 
-                if(WriteMem(hDev,0x8004,clear_buff,3,USB)!=3)
-                {
-                    printff(" Fail to Clear buff! \t\n");
-                    return 0;
-                }
-                if(WriteMem(hDev,0x8007,dut_cmd_buff,9,USB)!=9)
-                {
-                    printff(" Fail to write buff! \t\n");
-                    return 0;
-                }
-                dut_cmd_buff[0]= cmd|0x80;
-                if(WriteMem(hDev,0x8007,dut_cmd_buff,1,USB)!=1)
-                {
-                    printff(" Fail to execute cmd! \t\n");
-                    return 0;
-                }
-                //t = timeGetTime();
-				//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
-                while(dut_cmd_buff[0]&0x80)
-                {
-					printf("zewen---> [FUNC]%s [LINE]:%d dut[0]%x\n", __FUNCTION__, __LINE__, dut_cmd_buff[0]);
-                    ReadMem(hDev,0x8007,dut_cmd_buff,1,USB);
-                    sleep(1);
-                    if(0)//timeGetTime() - t > timeout_ms)
-                    {
-                        printff(" Wait Flash ACK timeout: %d ms \t\n",timeout_ms);
-                        return 0;
-                    }
-                }
-				//printf("zewen---> [FUNC]%s [LINE]:%d dut[0]%x\n", __FUNCTION__, __LINE__, dut_cmd_buff[0]);
-                if(ReadMem(hDev,0x8004,dut_cmd_buff,4,USB)!=4)
-                {
-					printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
-                    return 0;
-                }
-				int i = 0;
-				for(; i < 4; i++)
-				{
-					printf("%x ", dut_cmd_buff[i]);
-				}
-				printf("\n");
+	if(WriteMem(hDev,0x8004,clear_buff,3,USB)!=3)
+	{
+		printff(" Fail to Clear buff! \t\n");
+		return 0;
+	}
+	if(WriteMem(hDev,0x8007,dut_cmd_buff,9,USB)!=9)
+	{
+		printff(" Fail to write buff! \t\n");
+		return 0;
+	}
+	dut_cmd_buff[0]= cmd|0x80;
+	if(WriteMem(hDev,0x8007,dut_cmd_buff,1,USB)!=1)
+	{
+		printff(" Fail to execute cmd! \t\n");
+		return 0;
+	}
+	//t = timeGetTime();
+	//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
+	while(dut_cmd_buff[0]&0x80)
+	{
+		//printf("zewen---> [FUNC]%s [LINE]:%d dut[0]%x\n", __FUNCTION__, __LINE__, dut_cmd_buff[0]);
+		ReadMem(hDev,0x8007,dut_cmd_buff,1,USB);
+		sleep(1);
+		if(0)//timeGetTime() - t > timeout_ms)
+		{
+			printff(" Wait Flash ACK timeout: %d ms \t\n",timeout_ms);
+			return 0;
+		}
+	}
+	//printf("zewen---> [FUNC]%s [LINE]:%d dut[0]%x\n", __FUNCTION__, __LINE__, dut_cmd_buff[0]);
+	if(ReadMem(hDev,0x8004,dut_cmd_buff,4,USB)!=4)
+	{
+		//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
+		return 0;
+	}
+#if  0
+	int i = 0;
+	for(; i < 4; i++)
+	{
+		printf("%x ", dut_cmd_buff[i]);
+	}
+	printf("\n");
+#endif
 
-
-                if((dut_cmd_buff[2]&0xff)!=cmd)
-                {
-                    printff(" Wait Flash ACK Failure! \t\n");
-                    return 0;
-                }
+	if((dut_cmd_buff[2]&0xff)!=cmd)
+	{
+		printff(" Wait Flash ACK Failure! \t\n");
+		return 0;
+	}
             
            
     if(cmd==TL_DUTCMD_FLASH_ASK)
@@ -250,55 +252,56 @@ int MCU_Init(libusb_device_handle *hDev,int Type)
     fclose(fp);
     
     //*********    reset mcu    *********************
-		    buffer[0]=0x05;
-		    unsigned char i=0;
-		    while((buffer[1]&0x05)!=0x05)
-		    {
-				//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
-				   WriteMem(hDev, 0x602, buffer, 1,USB);
-				   ReadMem(hDev, 0x602, buffer+1, 1,USB);
-			  	printf("buffer:%d\n", buffer[1]); 
-			   i++;
-			   if(i>3){printf(" TC32 USB : USB Err! \t\n");return 1;}
-		    }
-            printf(" TC32 USB : USB OK \t\n");
-			//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
-		 //********************   Disable watch dog, Disable interrupt,download file to ram and start MCU   *********************
-            buffer[0]=0x00;
-            
-            WriteMem(hDev, 0x622, buffer, 1,USB);
-            WriteMem(m_hDev, 0x643, buffer, 1,USB);
+	buffer[0]=0x05;
+unsigned char i=0;
+	while((buffer[1]&0x05)!=0x05)
+	{
+		
+		//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
+		WriteMem(hDev, 0x602, buffer, 1,USB);
+		ReadMem(hDev, 0x602, buffer+1, 1,USB);
+		//printf("buffer:%d\n", buffer[1]); 
+	   	i++;
+	   	if(i>3){printf(" TC32 USB : USB Err! \t\n");return 1;}
+	}
+	printf(" TC32 USB : USB OK \t\n");
+	//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
+ //********************   Disable watch dog, Disable interrupt,download file to ram and start MCU   *********************
+	buffer[0]=0x00;
+	
+	WriteMem(hDev, 0x622, buffer, 1,USB);
+	WriteMem(m_hDev, 0x643, buffer, 1,USB);
 
-               buffer[0]=0x40;
-               WriteMem(hDev, 0x60c, buffer, 1,USB);
-               WriteMem(hDev, 0x60d, buffer, 1,USB);
+	buffer[0]=0x40;
+	WriteMem(hDev, 0x60c, buffer, 1,USB);
+	WriteMem(hDev, 0x60d, buffer, 1,USB);
 
-               buffer[0]=0xff;
-               WriteMem(hDev, 0x104, buffer, 1,USB);
+	buffer[0]=0xff;
+   	WriteMem(hDev, 0x104, buffer, 1,USB);
 
 //printf("zewen---> [FUNC]%s [LINE]:%d size:%d\n", __FUNCTION__, __LINE__, size);
 
-               if(WriteMem(hDev,0x8000,ram_buffer,size,USB)!=size)
-               {
-                   printff("Write file to ram fail via USB! \t\n");
-                   return 0;
-               }
-               #if 0
-               if((Type==CHIP_8366)||(Type==CHIP_8368))
-               {
-                   buffer[0]=0x01;
-                   WriteMem (hDev,0x8ff0,buffer,1,USB);
-               }
-               #endif
-               buffer[0] = 0x88;
-               int t1 = WriteMem(hDev,0x602,buffer,1,USB);
-				printf("%d\n", t1);
-               if(t1 != 1)
-               {
-                   printff(" Fail to start MCU via USB! \t\n");
-                   return 0;
-               }
-     return 1;
+   if(WriteMem(hDev,0x8000,ram_buffer,size,USB)!=size)
+   {
+	   printff("Write file to ram fail via USB! \t\n");
+	   return 0;
+   }
+   #if 0
+   if((Type==CHIP_8366)||(Type==CHIP_8368))
+   {
+	   buffer[0]=0x01;
+	   WriteMem (hDev,0x8ff0,buffer,1,USB);
+   }
+   #endif
+   buffer[0] = 0x88;
+   int t1 = WriteMem(hDev,0x602,buffer,1,USB);
+	//printf("%d\n", t1);//zewen
+   if(t1 != 1)
+   {
+	   printff(" Fail to start MCU via USB! \t\n");
+	   return 0;
+   }
+ return 1;
 }
 
 #define BIN_BUF_SIZE (1024*1024)
@@ -324,168 +327,168 @@ void USB_Download(libusb_device_handle *hDev)
   //printf("zewen---> [FUNC]%s [LINE]:%d size:%d\n", __FUNCTION__, __LINE__, size);  
     #if 1
       
-        {
-            unsigned long int EraseSector_Num = (size%0x1000)? (1+(size/0x1000)):(size/0x1000);
-            unsigned long int PageWrite_Num   = (size%0x100)? (1+(size/0x100)):(size/0x100);
-            unsigned char Last_Bytes_Num  = size%0x100;
-			unsigned int j;
-			printf("EraseSector_Num:%d pagewrite_num:%d last_bytes_num:%d\n", EraseSector_Num, PageWrite_Num, Last_Bytes_Num);
-            //unsigned int t = timeGetTime();
-            #if 1
-            for(unsigned int i=0;i<(EraseSector_Num-1);i++)
-            {
-                if(TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_ERASE,USB,Type,Adr+i*0x1000,4)!=0)
-                {
-                    printff(" Flash Sector (4K) Erase at address %x \t\n",Adr+i*0x1000);
+	{
+		unsigned long int EraseSector_Num = (size%0x1000)? (1+(size/0x1000)):(size/0x1000);
+		unsigned long int PageWrite_Num   = (size%0x100)? (1+(size/0x100)):(size/0x100);
+		unsigned char Last_Bytes_Num  = size%0x100;
+		unsigned int j;
+		//printf("EraseSector_Num:%d pagewrite_num:%d last_bytes_num:%d\n", EraseSector_Num, PageWrite_Num, Last_Bytes_Num);//zewen
+		//unsigned int t = timeGetTime();
+		#if 1
+		for(unsigned int i=0;i<(EraseSector_Num-1);i++)
+		{
+			if(TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_ERASE,USB,Type,Adr+i*0x1000,4)!=0)
+			{
+				printff(" Flash Sector (4K) Erase at address %x \t\n",Adr+i*0x1000);
 
-                    int ram_adr = TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_ASK,USB,Type,NULL,NULL);
+				int ram_adr = TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_ASK,USB,Type,0,0);
 
-                    for(j=0;j<16;j++)
-                    {
-						
-                        if((Type==CHIP_8255)||(Type==CHIP_8255_A2))
-                        {
-							#if 0
-                            if(WriteMem2(hDev,ram_adr,bin_buffer+j*0x100+i*0x1000,256,USB)!=256)
-                            {
-                                 printff("\n USB Download fail! \t\n");
-                                 return;
-                            }
-                            #endif
-                        }
-                        else
-                        {
-                            if(WriteMem(hDev,ram_adr,bin_buffer+j*0x100+i*0x1000,256,USB)!=256)
-                            {
-                                 printff("\n USB Download fail! \t\n");
-                                 return;
-                            }
-                        }
-
-                        if(TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_WRITE,USB,Type,Adr+j*0x100+i*0x1000,256)!=0)
-                        {
-                            if(j%4==0) printff(" Flash Page Program at address %x \t\n",Adr+j*0x100+i*0x1000);
-                        }
-                        else
-                        {
-                            printff(" Flash Page Program Error at address %x \t\n",Adr+j*0x100+i*0x1000);
-                        }
-                    }
-                }
-                else
-                {
-                    printff(" Flash Sector (4K) Erase Error at address %x \t\n",Adr+i*0x1000);
-                }
-            }
-
-            PageWrite_Num = PageWrite_Num - ((EraseSector_Num-1)*16);
-			//printf("zewen---> [FUNC]%s [LINE]:%d j:%d PageWrite_Num:%d\n", __FUNCTION__, __LINE__, j, PageWrite_Num);
-
-            if(TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_ERASE,USB,Type,Adr+(EraseSector_Num-1)*0x1000,4)!=0)
-            {
-                printff(" Flash Sector (4K) Erase at address %x \t\n",Adr+(EraseSector_Num-1)*0x1000);
-
-                int ram_adr = TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_ASK,USB,Type,NULL,NULL);
-                for(unsigned int i=0;i<PageWrite_Num;i++)
-                {
-                    int Page_Bytes = ((i+1)==PageWrite_Num)? ((Last_Bytes_Num==0)? 256:Last_Bytes_Num):256;
-                    if((Type==CHIP_8255)||(Type==CHIP_8255_A2))
-                    {
+				for(j=0;j<16;j++)
+				{
+					
+					if((Type==CHIP_8255)||(Type==CHIP_8255_A2))
+					{
 						#if 0
-                        if(WriteMem2(hDev,ram_adr,bin_buffer+256*i+(EraseSector_Num-1)*0x1000,Page_Bytes,USB)!=Page_Bytes)
-                        {
-                             printff("\n USB Download fail! \t\n");
-                             return;
-                        }
-                        #endif
-                    }
-                    else
-                    {
-                        if(WriteMem(hDev,ram_adr,bin_buffer+256*i+(EraseSector_Num-1)*0x1000,Page_Bytes,USB)!=Page_Bytes)
-                        {
-                             printff("\n USB Download fail! \t\n");
-                             return;
-                        }
-                    }
+						if(WriteMem2(hDev,ram_adr,bin_buffer+j*0x100+i*0x1000,256,USB)!=256)
+					   {
+							 printff("\n USB Download fail! \t\n");
+							 return;
+						}
+						#endif
+					}
+					else
+					{
+						if(WriteMem(hDev,ram_adr,bin_buffer+j*0x100+i*0x1000,256,USB)!=256)
+						{
+							 printff("\n USB Download fail! \t\n");
+							 return;
+						}
+					}
 
-                    //ToDO
-                    if(TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_WRITE,USB,Type,Adr+256*i+(EraseSector_Num-1)*0x1000,Page_Bytes)!=0)
-                    {
-                        if(i%4==0)printff(" Flash Page Program at address %x \t\n",(unsigned int)(i*256)+(unsigned int)(EraseSector_Num-1)*0x1000+Adr);
-                    }
-                    else
-                    {
-                        printff(" Flash Page Program Error at address %x \t\n",(unsigned int)(i*256)+(unsigned int)(EraseSector_Num-1)*0x1000+Adr);
-                        return;
-                    }
-                }
-            }
-            else
-            {
-                printff(" Flash Sector (4K) Erase Error at address %x \t\n",Adr+(EraseSector_Num-1)*0x1000);
-                return;
-            }
-            #else
-            if(TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_ERASE,USB,Type,Adr,EraseSector_Num*4)!=0)
-            {
-                int ram_adr = TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_ASK,USB,Type,NULL,NULL);
-                for(unsigned int i=0;i<PageWrite_Num;i++)
-                {
-                    int Page_Bytes = ((i+1)==PageWrite_Num)? ((Last_Bytes_Num==0)? 256:Last_Bytes_Num):256;
-                    if((Type==CHIP_8255)||(Type==CHIP_8255_A2))
-                    {
-						#if 0
-                        if(WriteMem2(hDev,ram_adr,bin_buffer+256*i,Page_Bytes,USB)!=Page_Bytes)
-                        {
-                             printff("\n USB Download fail! \t\n");
-                             return;
-                        }
-                        #endif
-                    }
-                    else
-                    {
-                        if(WriteMem(hDev,ram_adr,bin_buffer+256*i,Page_Bytes,USB)!=Page_Bytes)
-                        {
-                             printff("\n USB Download fail! \t\n");
-                             return;
-                        }
-                    }
-                    if(TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_WRITE,USB,Type,Adr+256*i,Page_Bytes)!=0)
-                    {
-                        if((i%16)==0)
-                        {
-                            printff(" Flash Sector (4K) Erase & Program at address %x \t\n",Adr+256*i);
-                        }
-                        else if((i%4)==0)
-                        {
-                            printff(" Flash Sector (4K) Program at address %x \t\n",Adr+256*i);
-                        }
-                    }
-                    else
-                    {
-                        if((i%16)==0)
-                        {
-                            printff(" Flash Sector (4K) Erase at address %x \t\n",Adr+256*i);
-                        }
-                        else if((i%4)==0)
-                        {
-                            printff(" Flash Sector Check Error at Addr %x \t\n",Adr+256*i);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                printff(" Erase Flash fail! \t\n");
-                return;
-            }
-            #endif
-            //t = (unsigned int)(timeGetTime()-t);
-            printff(" File Download to 0x%.6x: %d bytes \t\n",Adr,size);
-            //printff(" Total Time: %d ms \t\n",t);
-            
-        }
-    #endif
+					if(TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_WRITE,USB,Type,Adr+j*0x100+i*0x1000,256)!=0)
+					{
+						if(j%4==0) printff(" Flash Page Program at address %x \t\n",Adr+j*0x100+i*0x1000);
+					}
+					else
+					{
+						printff(" Flash Page Program Error at address %x \t\n",Adr+j*0x100+i*0x1000);
+					}
+				}
+			}
+			else
+			{
+				printff(" Flash Sector (4K) Erase Error at address %x \t\n",Adr+i*0x1000);
+			}
+		}
+
+		PageWrite_Num = PageWrite_Num - ((EraseSector_Num-1)*16);
+		//printf("zewen---> [FUNC]%s [LINE]:%d j:%d PageWrite_Num:%d\n", __FUNCTION__, __LINE__, j, PageWrite_Num);
+
+		if(TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_ERASE,USB,Type,Adr+(EraseSector_Num-1)*0x1000,4)!=0)
+		{
+			printff(" Flash Sector (4K) Erase at address %lx \t\n",Adr+(EraseSector_Num-1)*0x1000);
+
+			int ram_adr = TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_ASK,USB,Type,0,0);
+			for(unsigned int i=0;i<PageWrite_Num;i++)
+			{
+				int Page_Bytes = ((i+1)==PageWrite_Num)? ((Last_Bytes_Num==0)? 256:Last_Bytes_Num):256;
+				if((Type==CHIP_8255)||(Type==CHIP_8255_A2))
+				{
+					#if 0
+					if(WriteMem2(hDev,ram_adr,bin_buffer+256*i+(EraseSector_Num-1)*0x1000,Page_Bytes,USB)!=Page_Bytes)
+					{
+						 printff("\n USB Download fail! \t\n");
+						 return;
+					}
+					#endif
+				}
+				else
+				{
+					if(WriteMem(hDev,ram_adr,bin_buffer+256*i+(EraseSector_Num-1)*0x1000,Page_Bytes,USB)!=Page_Bytes)
+					{
+						 printff("\n USB Download fail! \t\n");
+						 return;
+					}
+				}
+
+				//ToDO
+				if(TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_WRITE,USB,Type,Adr+256*i+(EraseSector_Num-1)*0x1000,Page_Bytes)!=0)
+				{
+					if(i%4==0)printff(" Flash Page Program at address %x \t\n",(unsigned int)(i*256)+(unsigned int)(EraseSector_Num-1)*0x1000+Adr);
+				}
+				else
+				{
+					printff(" Flash Page Program Error at address %x \t\n",(unsigned int)(i*256)+(unsigned int)(EraseSector_Num-1)*0x1000+Adr);
+					return;
+				}
+			}
+		}
+		else
+		{
+			printff(" Flash Sector (4K) Erase Error at address %lx \t\n",Adr+(EraseSector_Num-1)*0x1000);
+			return;
+		}
+		#else
+		if(TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_ERASE,USB,Type,Adr,EraseSector_Num*4)!=0)
+		{
+			int ram_adr = TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_ASK,USB,Type,NULL,NULL);
+			for(unsigned int i=0;i<PageWrite_Num;i++)
+			{
+				int Page_Bytes = ((i+1)==PageWrite_Num)? ((Last_Bytes_Num==0)? 256:Last_Bytes_Num):256;
+				if((Type==CHIP_8255)||(Type==CHIP_8255_A2))
+				{
+					#if 0
+					if(WriteMem2(hDev,ram_adr,bin_buffer+256*i,Page_Bytes,USB)!=Page_Bytes)
+					{
+						 printff("\n USB Download fail! \t\n");
+						 return;
+					}
+					#endif
+				}
+				else
+				{
+					if(WriteMem(hDev,ram_adr,bin_buffer+256*i,Page_Bytes,USB)!=Page_Bytes)
+					{
+						 printff("\n USB Download fail! \t\n");
+						 return;
+					}
+				}
+				if(TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_WRITE,USB,Type,Adr+256*i,Page_Bytes)!=0)
+				{
+					if((i%16)==0)
+					{
+						printff(" Flash Sector (4K) Erase & Program at address %x \t\n",Adr+256*i);
+					}
+					else if((i%4)==0)
+					{
+						printff(" Flash Sector (4K) Program at address %x \t\n",Adr+256*i);
+					}
+				}
+				else
+				{
+					if((i%16)==0)
+					{
+						printff(" Flash Sector (4K) Erase at address %x \t\n",Adr+256*i);
+					}
+					else if((i%4)==0)
+					{
+						printff(" Flash Sector Check Error at Addr %x \t\n",Adr+256*i);
+					}
+				}
+			}
+		}
+		else
+		{
+			printff(" Erase Flash fail! \t\n");
+			return;
+		}
+		#endif
+		//t = (unsigned int)(timeGetTime()-t);
+		printff(" File Download to 0x%.6x: %ld bytes \t\n",Adr,size);
+		//printff(" Total Time: %d ms \t\n",t);
+		
+	}
+#endif
 	
 }
 

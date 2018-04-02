@@ -57,7 +57,7 @@ int WriteToDevice(libusb_device_handle *hd, uint16_t deviceAddress, uint16_t len
 		fprintf(stderr, "write to endpoint0 error %d\n", r);
 		return r;
 	}
-	printf("r=%d sizeof(data):%d\n", r, sizeof(data));
+	//printf("r=%d sizeof(data):%d\n", r, sizeof(data));
 	//if ((unsigned int) r < sizeof(data)) {
 	if ((unsigned int) r < wLength) {
 #ifdef DEBUG
@@ -94,7 +94,7 @@ int ReadFromDevice(libusb_device_handle *hd, uint16_t deviceAddress, uint16_t le
 		fprintf(stderr, "F0 error %d\n", r);
 		return r;
 	}
-	printf("zewen: r:%d \n", r);
+	//printf("zewen: r:%d \n", r);
 	if ((unsigned int) r < sizeof(data)) {
 #ifdef DEBUG
 		fprintf(stderr, "short read (%d)\n", r);
@@ -288,7 +288,7 @@ int IsEVKDevice (libusb_device_handle *h)
 {
     DWORD id;
     int ret = ReadUSBMem(h, 0x7c, (LPBYTE) &id, 4, 0, 1024);
-	printf("zewen:%lx\n", id);
+	//printf("zewen:%lx\n", id);
     if ((id & 0xffff0000) == 0x08180000)
         return 4;
     else
@@ -398,18 +398,18 @@ int WriteUSBMemCheck(libusb_device_handle *hdev, int addr, LPBYTE lpB, int len, 
         retw = WriteUSBMem (hdev, addr, lpB, len, fifo, maxlen);
         if (len <= 8)
 		{
-			printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
+			//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
             //return retw;
 		}
-printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
+//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
         int ok = 1;
         retr = ReadUSBMemCheck  (hdev, addr, rbuff, len, fifo, maxlen);
         //retr = ReadUSBMem  (hdev, addr, rbuff, len, fifo, maxlen);
         for (int k=0; k<len; k++) {
             if (lpB[k] != rbuff[k]) {
-				printf("lpB[%d]=%x rbuff[%d]=%x\n", k,lpB[k],k, rbuff[k]);
+				//printf("lpB[%d]=%x rbuff[%d]=%x\n", k,lpB[k],k, rbuff[k]);
                 ok = 0;
-                LogMsg ("USB write adrress %x", addr + k);
+                //LogMsg ("USB write adrress %x", addr + k);
                 //break;
             }
         }
@@ -430,7 +430,7 @@ printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
 int WriteMem(libusb_device_handle *hdev, int addr, LPBYTE lpB, int len, int type)
 {
 	//DEBUG_OUT("adr = %x, len=%d",addr,len);
-	printf("adr = %x, len=%d\n",addr,len);
+	//printf("adr = %x, len=%d\n",addr,len);
     BYTE ah = addr>>16;
     //WriteI2CMem (hdev, 0xffff, &ah, 1, 1);
     int ret = 0;
