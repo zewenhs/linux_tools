@@ -137,7 +137,8 @@ void SignalHandler(int sigraised) {
 //================================================================================================
 //	main
 //================================================================================================
-int GetPrinterHandle(int argc, const char *argv[])
+
+libusb_device_handle  *telink_usb_open()
 {
     unsigned int					usbVendor = kMyVendorID;
     unsigned int					usbProduct = kMyProductID;
@@ -175,7 +176,7 @@ int GetPrinterHandle(int argc, const char *argv[])
 	r = libusb_init(&ctx); //initialize the library for the session we just declared
 	if(r < 0) {
 		perror("Init Error\n"); //there was an error
-		return 1;
+		return NULL;
 	}
 	//libusb_set_debug(ctx, LIBUSB_LOG_LEVEL_INFO); //set verbosity level to 3, as suggested in the documentation
 	libusb_set_debug(ctx, LIBUSB_LOG_LEVEL_NONE); //set verbosity level to 3, as suggested in the documentation
@@ -183,7 +184,7 @@ int GetPrinterHandle(int argc, const char *argv[])
 	cnt = libusb_get_device_list(ctx, &devs); //get the list of devices
 	if(cnt < 0) {
 		perror("Get Device Error\n"); //there was an error
-		return 1;
+		return NULL;
 	}
 
     // Find the pid with vid
@@ -217,7 +218,7 @@ int GetPrinterHandle(int argc, const char *argv[])
     //}
     if (-1 == found) {
 		perror("Cannot find device\n");
-        return 1;
+        return NULL;
     } else {
 #ifdef DEBUG
 		printf("find device 0x%08x:0x%08x\n", usbVendor, usbProduct);
@@ -232,7 +233,7 @@ int GetPrinterHandle(int argc, const char *argv[])
 	dev_handle = libusb_open_device_with_vid_pid(ctx, usbVendor, usbProduct);
     if(dev_handle == NULL) {
 		perror("Cannot open device\n");
-        return 1;
+        return NULL;
     }
     else {
 #ifdef DEBUG
@@ -255,7 +256,7 @@ int GetPrinterHandle(int argc, const char *argv[])
 	r = libusb_claim_interface(dev_handle, 0); //claim interface 0 (the first) of device (mine had jsut 1)
 	if(r < 0) {
 		perror("Cannot Claim Interface\n");
-		return 1;
+		return NULL;
 	}
     //Now, device is ready
 #ifdef DEBUG
@@ -281,7 +282,7 @@ int GetPrinterHandle(int argc, const char *argv[])
 
     //return pcDev ? 1 : 0;
     //return r ? 1 : 0;
-    return 0;
+    return dev_handle;
 }
 
 int IsEVKDevice (libusb_device_handle *h)
