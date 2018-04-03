@@ -310,6 +310,7 @@ int telink_usb_download(libusb_device_handle *hDev, unsigned int adr, const char
 	//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
 	int Type = 100;//zewen
 	//unsigned int Adr = 0x20000;
+	struct timeval start, end;
 	
 	signed long int size=0;
     unsigned char bin_buffer[BIN_BUF_SIZE]={0};
@@ -333,7 +334,7 @@ int telink_usb_download(libusb_device_handle *hDev, unsigned int adr, const char
 		unsigned char Last_Bytes_Num  = size%0x100;
 		unsigned int j;
 		//printf("EraseSector_Num:%d pagewrite_num:%d last_bytes_num:%d\n", EraseSector_Num, PageWrite_Num, Last_Bytes_Num);//zewen
-		//unsigned int t = timeGetTime();
+		gettimeofday(&start, NULL);
 		#if 1
 		for(unsigned int i=0;i<(EraseSector_Num-1);i++)
 		{
@@ -483,9 +484,11 @@ int telink_usb_download(libusb_device_handle *hDev, unsigned int adr, const char
 			return;
 		}
 		#endif
-		//t = (unsigned int)(timeGetTime()-t);
+		gettimeofday(&end, NULL);
 		printff(" File Download to 0x%.6x: %ld bytes \t\n",adr,size);
-		//printff(" Total Time: %d ms \t\n",t);
+		float time_use = (end.tv_sec - start.tv_sec)*1000000 + (end.tv_usec - start.tv_usec);
+		time_use /= 1000000;
+		printff(" Total Time: %.2f s \t\n", time_use);
 		
 	}
 #endif
