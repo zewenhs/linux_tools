@@ -14,6 +14,7 @@
 #include "usbprn.h"
 #include "cmdfunc.h"
 #include <libusb-1.0/libusb.h>
+#include "telink_usb.h"
 
 #if 1
 
@@ -495,6 +496,50 @@ int telink_usb_download(libusb_device_handle *hDev, unsigned int adr, const char
 	return 0;
 }
 
+#define EP_IN	8
+#define EP_OUT	5
+#define TIME_OUT	1000
+
+int telink_usb_action(libusb_device_handle *hDev, TL_CMDType cmd, unsigned char * data)
+{
+	unsigned char buf[10] = {0};
+	int size = -10;
+	int ret = -1;
+	switch(cmd)
+	{
+		case SCAN:
+			buf[0] = 0xfa; buf[1]= 0x01;
+			if(data[0] == 1)
+				buf[2] = 0x01;
+			else
+				buf[2] = 0x00;
+			ret = libusb_bulk_transfer(hDev, EP_OUT, buf, 3, &size, TIME_OUT);
+			break;
+
+		case CONNECT:
+			buf[0] = 0xfa; buf[1] = 0x02;
+			memcpy(buf + 2, data, 6);
+			ret = libusb_bulk_transfer(hDev, EP_OUT, buf, 8, &size, TIME_OUT);
+			break;
+
+		case DISCONNECT:
+			buf[0] = 0xfa; buf[1] = 0x03; buf[2] = 0x00;
+			ret = libusb_bulk_transfer(hDev, EP_OUT, buf, 3, &size, TIME_OUT);
+			break;
+
+		case OTA:
+			buf[0] = 0xfa; buf[1] = 0x04; buf[2] = 0x00;
+			ret =libusb_bulk_transfer(hDev, EP_OUT, buf, 3, &size, TIME_OUT);
+			break;
+
+		case BAT_STATUS:
+			buf[0] = 0xfa; buf[1] = 0x05; buf[2] = 0x00;
+			ret = libusb_bulk_transfer(hDev, EP_OUT, buf, 3, &size, TIME_OUT);
+			break;
+	}
+
+	return ret;
+}
 
 #if 0
 int main(int argc, const char * argv[]) {

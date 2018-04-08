@@ -55,6 +55,8 @@ int WriteToDevice(libusb_device_handle *hd, uint16_t deviceAddress, uint16_t len
 	r = libusb_control_transfer(hd, bmRequestType, bRequest, wValue, wIndex, data, wLength, timeout);
 	if (r < 0) {
 		fprintf(stderr, "write to endpoint0 error %d\n", r);
+		printf("error name:%s\n", libusb_error_name(r));
+		printf("error msg:%s\n", libusb_strerror(r));
 		return r;
 	}
 	//printf("r=%d sizeof(data):%d\n", r, sizeof(data));
@@ -92,6 +94,8 @@ int ReadFromDevice(libusb_device_handle *hd, uint16_t deviceAddress, uint16_t le
 	r = libusb_control_transfer(hd, bmRequestType, bRequest, wValue, wIndex, data, wLength, timeout);
 	if (r < 0) {
 		fprintf(stderr, "F0 error %d\n", r);
+		printf("error name:%s\n", libusb_error_name(r));
+		printf("error msg:%s\n", libusb_strerror(r));
 		return r;
 	}
 	//printf("zewen: r:%d \n", r);
