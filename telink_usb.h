@@ -10,7 +10,8 @@
 #include <libusb-1.0/libusb.h>
 
 typedef enum {
-	SCAN,
+	SCAN_ON,
+	SCAN_OFF,
 	CONNECT,
 	DISCONNECT,
 	OTA,
@@ -33,3 +34,5 @@ int telink_usb_download(libusb_device_handle *hDev, unsigned int adr, const char
  *@data: some parameter if needed(eg, SCAN enable or disable; MAC address when use CONNECT cmd)
  * **/
 int telink_usb_action(libusb_device_handle *hDev, TL_CMDType cmd, unsigned char *data);
+
+int telink_usb_get_data(libusb_device_handle *hDev, unsigned char *buf, int len, int *size);

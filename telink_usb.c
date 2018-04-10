@@ -496,27 +496,33 @@ int telink_usb_download(libusb_device_handle *hDev, unsigned int adr, const char
 	return 0;
 }
 
-#define EP_IN	8
+#define EP_IN	0x88
 #define EP_OUT	5
 #define TIME_OUT	1000
 
-int telink_usb_action(libusb_device_handle *hDev, TL_CMDType cmd, unsigned char * data)
+int telink_usb_action(libusb_device_handle *hDev, TL_CMDType cmd, unsigned char *data)
 {
 	unsigned char buf[10] = {0};
 	int size = -10;
 	int ret = -1;
 	switch(cmd)
 	{
-		case SCAN:
-			buf[0] = 0xfa; buf[1]= 0x01;
-			if(data[0] == 1)
-				buf[2] = 0x01;
-			else
-				buf[2] = 0x00;
+		case SCAN_ON:
+			buf[0] = 0xfa; buf[1]= 0x01; buf[2] = 0x01;
+			ret = libusb_bulk_transfer(hDev, EP_OUT, buf, 3, &size, TIME_OUT);
+			break;
+
+		case SCAN_OFF:
+			buf[0] = 0xfa; buf[1]= 0x01; buf[2] = 0x00;
 			ret = libusb_bulk_transfer(hDev, EP_OUT, buf, 3, &size, TIME_OUT);
 			break;
 
 		case CONNECT:
+			if(data == NULL)
+			{
+				printf("fatal error!!! NULL pointer!!!\n");
+				return -1;
+			}
 			buf[0] = 0xfa; buf[1] = 0x02;
 			memcpy(buf + 2, data, 6);
 			ret = libusb_bulk_transfer(hDev, EP_OUT, buf, 8, &size, TIME_OUT);
@@ -538,6 +544,14 @@ int telink_usb_action(libusb_device_handle *hDev, TL_CMDType cmd, unsigned char 
 			break;
 	}
 
+	return ret;
+}
+
+int telink_usb_get_data(libusb_device_handle *hDev, unsigned char *buf, int len, int *size)
+{
+	int ret = -1;
+	ret = libusb_bulk_transfer(hDev, EP_IN, buf, len, size, 0);
+	
 	return ret;
 }
 
