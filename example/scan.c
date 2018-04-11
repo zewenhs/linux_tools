@@ -80,14 +80,14 @@ void *get_scan_data(void *arg)
 		if(ret != 0)
 			printf("bulk transfer error!\n");
 
-		ret = store_scan_data(pstr, buf, num, size);
+		ret = store_scan_data(pstr, &buf[1], num, size - 1);
 		if(ret == 0)
 			num++;
 		
 		if(ret == 0)
 		{
 			printf("\n------------------------------------------------ size:%d\n", size);
-			for( i = 0; i < size; i++ )
+			for( i = 1; i < size; i++ )
 				printf("%x ", buf[i]);
 		}
 	}
