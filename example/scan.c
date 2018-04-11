@@ -1,5 +1,5 @@
 /*************************************************************************
-	gcc -o test test.c -ltelink-usb -lpthread
+	gcc -o scan scan.c -ltelink-usb -lpthread
 	sudo ./test 20000 download.bin
  ************************************************************************/
 
@@ -60,6 +60,7 @@ int store_scan_data(unsigned char *pstr[], unsigned char *buf, int num, int size
 	return 0;
 
 }
+
 void *get_scan_data(void *arg)
 {
 	printf("this is a new thread!\n");
@@ -112,7 +113,7 @@ int main(int argc, const char *argv[])
 		printf("pthread create failed!!!\n");
 			
 	printf("now sleep 20s...ret=%d\n", ret);
-	sleep(10);
+	sleep(20);
 	stop_thd = 1;
 	printf("now will sleep for scan data\n");
 	sleep(1);
@@ -128,7 +129,7 @@ int main(int argc, const char *argv[])
 	/* 如果是telink的产品scan 返回的数据如下面所示（仅展示前面的部分数据）：前面6的字节是MAC 地址，仅接着的一个字节是广播包的总长度，
 	 * 再往后一个字节是设备名字字符串长度+1（假设为n）,第九个字节是固定值9, 后面接着的n-1个字节就是设备的名字 
 	 *
-	 * fd e1 e2 e3 e4 c7 13 5 9 74 68 69 64
+	 * fd e1 e2 e3 e4 c7 13 5 9 74 68 69 64 ... //此设备的名字为 "thid", MAC:C7:E4:E3:E2:E1:FD
 	 *
 	 * */
 	unsigned char name_buf[20] = {0};
