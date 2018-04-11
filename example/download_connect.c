@@ -1,6 +1,6 @@
 /***************************************************************************************
 	gcc -o download_connect download_connect.c -ltelink-usb
-	sudo ./test 20000 download.bin // download 测试
+	sudo ./download_connect 20000 download.bin // download 测试
 	测序开始的两个宏：DOWNLOAD_TEST, CONNECT_TEST 分别对应fw download测试及connect测试
 	connect测试时需要修改代码中的mac地址， 其他命令格式请参考本project中附带的文档
  ***************************************************************************************/

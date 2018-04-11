@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 #include "usbprn.h"
 #include "cmdfunc.h"
@@ -154,7 +155,8 @@ int TL_Dut_cmd_Process(libusb_device_handle *hDev, TL_DutcmdTypdef cmd, TL_ModeT
 //	printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
     unsigned char dut_cmd_buff[10]={0};
     unsigned char clear_buff[4]={0};
-    unsigned long int t =0;
+    long int t;
+	struct timeval ts, te;
     unsigned int timeout_ms = 2000;
     memset(dut_cmd_buff,0,10);
     memset(clear_buff,0,4);
@@ -187,13 +189,15 @@ int TL_Dut_cmd_Process(libusb_device_handle *hDev, TL_DutcmdTypdef cmd, TL_ModeT
 		return 0;
 	}
 	//t = timeGetTime();
-	//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
+	gettimeofday(&ts, NULL);
 	while(dut_cmd_buff[0]&0x80)
 	{
 		//printf("zewen---> [FUNC]%s [LINE]:%d dut[0]%x\n", __FUNCTION__, __LINE__, dut_cmd_buff[0]);
 		ReadMem(hDev,0x8007,dut_cmd_buff,1,USB);
 		sleep(1);
-		if(0)//timeGetTime() - t > timeout_ms)
+		gettimeofday(&te, NULL);
+		t = (te.tv_sec - ts.tv_sec) * 1000 + (te.tv_usec - ts.tv_usec) /1000;
+		if(t > timeout_ms)
 		{
 			printff(" Wait Flash ACK timeout: %d ms \t\n",timeout_ms);
 			return 0;
