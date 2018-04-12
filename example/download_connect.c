@@ -60,15 +60,31 @@ int main(int argc, const char *argv[])
 	
 	unsigned char buf[1024] = {0};
 	int size = -1;
-	int i;
+	int i = 0;
 
-	ret = telink_usb_get_data(dev_handle, buf, 1024, &size);//get connect result
-	if(ret)
-		printf("usb transfer error!!!\n");
+	/**
+	 *目前dongle端在连接成功后会返回连接设备的MAC地址，断开成功后会返回断开原因码（user主动断开的原因码是0x13）
+	 *但是测试中发现在某些情况下（如运行scan命令后），BULK IN 的buffer里会有没有读完的data，所以此处的while的功能是将没有读完的data去掉
+	 * **/
+	while(i < 20)
+	{
+		ret = telink_usb_get_data(dev_handle, buf, 1024, &size);//get connect result
+		if(ret)
+		{
+			printf("usb transfer error!!! ret:%d\n", ret);
+			break;
+		}
+		//printf("size:%d\n", size);
+		if(size == 6)
+			break;
+
+		i++;
+	}
 	for(i = 0; i < size; i++)
 	{
 		printf("%x:", buf[i]);
 	}	
+	//if(strncmp(data, &buf[1], 6) == 0)
 	if(strncmp(data, buf, 6) == 0)
 		printf("\nconnect successful!\n");
 	else
