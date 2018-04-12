@@ -1,8 +1,12 @@
 /***************************************************************************************
 	gcc -o download_connect download_connect.c -ltelink-usb
-	sudo ./download_connect 20000 download.bin // download 测试
+
+	sudo ./download_connect 20000 download.bin // download 测试格式
+	sudo ./download_connect // connect 测试格式
+
 	测序开始的两个宏：DOWNLOAD_TEST, CONNECT_TEST 分别对应fw download测试及connect测试
-	connect测试时需要修改代码中的mac地址， 其他命令格式请参考本project中附带的文档
+	1. flash download 测试需要将dut_5326_flash_v0002.bin 文件放到运行时的目录中
+	2. connect测试时需要修改代码中的mac地址， 其他命令格式请参考本project中附带的文档
  ***************************************************************************************/
 
 #include <stdio.h>
@@ -20,7 +24,7 @@ int main(int argc, const char *argv[])
 #if DOWNLOAD_TEST
 	if(argc != 3)
 	{
-		printf("\nsyntax error!\n./tcbdb adr download_fw\n");
+		printf("\nsyntax error!\n./download_connect adr download_fw\n");
 		return -1;
 	}
 
