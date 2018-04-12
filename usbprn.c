@@ -98,7 +98,6 @@ int ReadFromDevice(libusb_device_handle *hd, uint16_t deviceAddress, uint16_t le
 		printf("error msg:%s\n", libusb_strerror(r));
 		return r;
 	}
-	//printf("zewen: r:%d \n", r);
 	if ((unsigned int) r < sizeof(data)) {
 #ifdef DEBUG
 		fprintf(stderr, "short read (%d)\n", r);
@@ -293,7 +292,6 @@ int IsEVKDevice (libusb_device_handle *h)
 {
     DWORD id;
     int ret = ReadUSBMem(h, 0x7c, (LPBYTE) &id, 4, 0, 1024);
-	//printf("zewen:%lx\n", id);
     if ((id & 0xffff0000) == 0x08180000)
         return 4;
     else
@@ -403,10 +401,8 @@ int WriteUSBMemCheck(libusb_device_handle *hdev, int addr, LPBYTE lpB, int len, 
         retw = WriteUSBMem (hdev, addr, lpB, len, fifo, maxlen);
         if (len <= 8)
 		{
-			//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
             //return retw;
 		}
-//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
         int ok = 1;
         retr = ReadUSBMemCheck  (hdev, addr, rbuff, len, fifo, maxlen);
         //retr = ReadUSBMem  (hdev, addr, rbuff, len, fifo, maxlen);
@@ -497,7 +493,7 @@ int ReadMem(libusb_device_handle *hdev, int addr, LPBYTE lpB, int len, int type)
         }
     }
     //return ret;
-    return len;//zewen
+    return len;
 }
 
 int ReadUartMem(libusb_device_handle *hdev, LPBYTE lpB)

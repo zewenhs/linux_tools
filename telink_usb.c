@@ -152,7 +152,6 @@ int CMDS_Exec_Single (char * cmdline)
 
 int TL_Dut_cmd_Process(libusb_device_handle *hDev, TL_DutcmdTypdef cmd, TL_ModeTypdef Mode, TL_ChipTypdef Type, unsigned long int p1,unsigned long int p2)
 {
-//	printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
     unsigned char dut_cmd_buff[10]={0};
     unsigned char clear_buff[4]={0};
     long int t;
@@ -188,11 +187,9 @@ int TL_Dut_cmd_Process(libusb_device_handle *hDev, TL_DutcmdTypdef cmd, TL_ModeT
 		printff(" Fail to execute cmd! \t\n");
 		return 0;
 	}
-	//t = timeGetTime();
 	gettimeofday(&ts, NULL);
 	while(dut_cmd_buff[0]&0x80)
 	{
-		//printf("zewen---> [FUNC]%s [LINE]:%d dut[0]%x\n", __FUNCTION__, __LINE__, dut_cmd_buff[0]);
 		ReadMem(hDev,0x8007,dut_cmd_buff,1,USB);
 		sleep(1);
 		gettimeofday(&te, NULL);
@@ -203,20 +200,10 @@ int TL_Dut_cmd_Process(libusb_device_handle *hDev, TL_DutcmdTypdef cmd, TL_ModeT
 			return 0;
 		}
 	}
-	//printf("zewen---> [FUNC]%s [LINE]:%d dut[0]%x\n", __FUNCTION__, __LINE__, dut_cmd_buff[0]);
 	if(ReadMem(hDev,0x8004,dut_cmd_buff,4,USB)!=4)
 	{
-		//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
 		return 0;
 	}
-#if  0
-	int i = 0;
-	for(; i < 4; i++)
-	{
-		printf("%x ", dut_cmd_buff[i]);
-	}
-	printf("\n");
-#endif
 
 	if((dut_cmd_buff[2]&0xff)!=cmd)
 	{
@@ -244,7 +231,6 @@ int TL_Dut_cmd_Process(libusb_device_handle *hDev, TL_DutcmdTypdef cmd, TL_ModeT
 
 int MCU_Init(libusb_device_handle *hDev,int Type)
 {
-	//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
 	unsigned char buffer[2]={0};
 	unsigned char ram_buffer[1024*8]={0};
 	signed long int size=0;
@@ -260,9 +246,7 @@ int MCU_Init(libusb_device_handle *hDev,int Type)
 	buffer[0]=0x05;
 	unsigned char i=0;
 	while((buffer[1]&0x05)!=0x05)
-	{
-		
-		//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
+	{	
 		WriteMem(hDev, 0x602, buffer, 1,USB);
 		ReadMem(hDev, 0x602, buffer+1, 1,USB);
 		//printf("buffer:%d\n", buffer[1]); 
@@ -270,7 +254,6 @@ int MCU_Init(libusb_device_handle *hDev,int Type)
 	   	if(i>3){printf(" TC32 USB : USB Err! \t\n");return 1;}
 	}
 	printf(" TC32 USB : USB OK \t\n");
-	//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
  //********************   Disable watch dog, Disable interrupt,download file to ram and start MCU   *********************
 	buffer[0]=0x00;
 	
@@ -283,8 +266,6 @@ int MCU_Init(libusb_device_handle *hDev,int Type)
 
 	buffer[0]=0xff;
    	WriteMem(hDev, 0x104, buffer, 1,USB);
-
-//printf("zewen---> [FUNC]%s [LINE]:%d size:%d\n", __FUNCTION__, __LINE__, size);
 
    if(WriteMem(hDev,0x8000,ram_buffer,size,USB)!=size)
    {
@@ -300,7 +281,6 @@ int MCU_Init(libusb_device_handle *hDev,int Type)
    #endif
    buffer[0] = 0x88;
    int t1 = WriteMem(hDev,0x602,buffer,1,USB);
-	//printf("%d\n", t1);//zewen
    if(t1 != 1)
    {
 	   printff(" Fail to start MCU via USB! \t\n");
@@ -312,8 +292,7 @@ int MCU_Init(libusb_device_handle *hDev,int Type)
 #define BIN_BUF_SIZE (1024*1024)
 int telink_usb_download(libusb_device_handle *hDev, unsigned int adr, const char *file_path)
 {
-	//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
-	int Type = 100;//zewen
+	int Type = 100;//for IC type, 预留
 	//unsigned int Adr = 0x20000;
 	struct timeval start, end;
 	
@@ -321,7 +300,6 @@ int telink_usb_download(libusb_device_handle *hDev, unsigned int adr, const char
     unsigned char bin_buffer[BIN_BUF_SIZE]={0};
     
     if(!MCU_Init(hDev,100)){return -1;}
-	//printf("zewen---> [FUNC]%s [LINE]:%d\n", __FUNCTION__, __LINE__);
     FILE *fp=NULL;
     fp = fopen(file_path,"rb");
     if(NULL==fp){printff( "Fail to open bin file! \t\n");fclose(fp);return -1;}
@@ -330,15 +308,12 @@ int telink_usb_download(libusb_device_handle *hDev, unsigned int adr, const char
     fseek(fp,0,SEEK_SET);
     fread(bin_buffer,1,size,fp);
     fclose(fp);
-  //printf("zewen---> [FUNC]%s [LINE]:%d size:%d\n", __FUNCTION__, __LINE__, size);  
-    #if 1
-      
+    #if 1 
 	{
 		unsigned long int EraseSector_Num = (size%0x1000)? (1+(size/0x1000)):(size/0x1000);
 		unsigned long int PageWrite_Num   = (size%0x100)? (1+(size/0x100)):(size/0x100);
 		unsigned char Last_Bytes_Num  = size%0x100;
 		unsigned int j;
-		//printf("EraseSector_Num:%d pagewrite_num:%d last_bytes_num:%d\n", EraseSector_Num, PageWrite_Num, Last_Bytes_Num);//zewen
 		gettimeofday(&start, NULL);
 		#if 1
 		for(unsigned int i=0;i<(EraseSector_Num-1);i++)
@@ -388,7 +363,6 @@ int telink_usb_download(libusb_device_handle *hDev, unsigned int adr, const char
 		}
 
 		PageWrite_Num = PageWrite_Num - ((EraseSector_Num-1)*16);
-		//printf("zewen---> [FUNC]%s [LINE]:%d j:%d PageWrite_Num:%d\n", __FUNCTION__, __LINE__, j, PageWrite_Num);
 
 		if(TL_Dut_cmd_Process(hDev,TL_DUTCMD_FLASH_ERASE,USB,Type,adr+(EraseSector_Num-1)*0x1000,4)!=0)
 		{
@@ -503,6 +477,7 @@ int telink_usb_download(libusb_device_handle *hDev, unsigned int adr, const char
 #define EP_IN	0x88
 #define EP_OUT	5
 #define TIME_OUT	1000
+#define TIME_OUT_2	2000
 
 int telink_usb_action(libusb_device_handle *hDev, TL_CMDType cmd, unsigned char *data)
 {
@@ -554,50 +529,10 @@ int telink_usb_action(libusb_device_handle *hDev, TL_CMDType cmd, unsigned char 
 int telink_usb_get_data(libusb_device_handle *hDev, unsigned char *buf, int len, int *size)
 {
 	int ret = -1;
-	ret = libusb_bulk_transfer(hDev, EP_IN, buf, len, size, 0);
+	ret = libusb_bulk_transfer(hDev, EP_IN, buf, len, size, TIME_OUT_2);
 	
 	return ret;
 }
-
-#if 0
-int main(int argc, const char * argv[]) {
-
-    char str[1024];
-    int i, n = 0;
-
-    for (i=1; i<argc; i++)
-    {
-        int l = strlen (argv[i]);
-        memcpy (str + n, argv[i], l);
-        str[n + l] = ' ';
-        n += l + 1;
-    }
-    str[n] = 0;
-
-#ifdef DEBUG
-    printf ("args:%s\n", str);
-#endif
-
-    if (!GetPrinterHandle (argc, argv))
-    {
-#ifdef DEBUG
-        int evk =  IsEVKDevice (m_hDev);
-        printf ("Is EVK = %d\n", evk);
-#endif
-		USB_Download(m_hDev);//zewen
-        //MainTask (str);
-    }
-    else{
-        fprintf(stderr, "GetPrinterHandle failed\n");
-    }
-
-	libusb_close(m_hDev); //close the device we opened
-	libusb_exit(ctx); //needs to be called to end the
-
-    return 0;
-}
-
-#endif
 
 void telink_usb_close(libusb_device_handle *m_hDev)
 {
